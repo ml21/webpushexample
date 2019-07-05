@@ -43,78 +43,104 @@ function PushGuiComponent() {
 
     let self = this;
 
-    function initializeForBlocked()
-    {
-        console.warn('push messaging blocked');
-        self.pushButton.textContent = 'Push messaging blocked';
-        self.pushButton.disabled = true;
+    function initialize(params) {
+
+      function initializeForBlocked()
+      {
+          console.warn('push messaging blocked');
+          self.pushButton.textContent = 'Push messaging blocked';
+          self.pushButton.disabled = true;
+
+          return Promise.resolve();
+      }
+
+      function initializeForSubscribed(
+        descriptionText,
+        subscribeAction,
+        unsubscribeAction) {
+        console.log('user is subscribed');
+
+        self.subscriptionJsonElement.textContent = descriptionText;
+        self.subscriptionDetailsElement.classList.remove('is-invisible');
+
+
+        self.pushButton.textContent = 'disable push messaging';
+        self.pushButton.disabled = false;
+
+        self.pushButton.addEventListener(
+          'click',
+          () => {
+            self.pushButton.disabled = true;
+
+            return unsubscribeAction()
+              // если ошибка будет при выполнении action, то она всплывет верх по стеку
+              .then(() => initializeForUnsubscribed(
+                  subscribeAction,
+                  unsubscribeAction)
+                .catch(someUiError => console.log("ошибка в интерфейсе, но пользователя мы уже отписали")));
+          },
+          { once: true });
 
         return Promise.resolve();
+      }
+
+      function initializeForUnsubscribed(
+        subscribeAction,
+        unsubscribeAction) {
+        console.log('user is unsubscribed');
+
+        self.subscriptionDetailsElement.classList.add('is-invisible');
+
+        self.pushButton.textContent = 'enable push messaging';
+        self.pushButton.disabled = false;
+
+        self.pushButton.addEventListener(
+          'click',
+          () => {
+            self.pushButton.disabled = true;
+
+            return subscribeAction()
+              // если ошибка будет при выполнении action, то мы должны отрисовать правильно GUI
+              .then(descriptionText => initializeForSubscribed(
+                  descriptionText,
+                  subscribeAction,
+                  unsubscribeAction)
+                .catch(someUiError => console.log("ошибка в интерфейсе, но пользователя мы уже подписали")))
+              .catch((error) => {
+                console.warn(`fail execute subscribe action ${error}`);
+
+                // это не лучший способ обработать ошибку - error может возникать как из за ошибки в коде subscribeAction
+                // так и в случае если пользователь нажал на Block в предложении подписки.
+                // но пока оставлю так
+                self.initialize({
+                  isPermissionDenied: params.isPermissionDenied,
+                  isSubscribed: false,
+                  description: null,
+                  subscribeAction: params.subscribeAction,
+                  unsubscribeAction: params.unsubscribeAction});
+              });
+          },
+          { once: true });
+
+        return Promise.resolve();
+      }
+
+      if (params.isPermissionDenied() === true) return initializeForBlocked();
+
+      if (params.isSubscribed === true) {
+        return initializeForSubscribed(
+            params.description,
+            params.subscribeAction,
+            params.unsubscribeAction);
+      } else {
+        return initializeForUnsubscribed(
+            params.subscribeAction,
+            params.unsubscribeAction);
+      }
     }
 
-    function initializeForSubscribed(
-      descriptionText,
-      subscribeAction,
-      unsubscribeAction) {
-      console.log('user is subscribed');
 
-      self.subscriptionJsonElement.textContent = descriptionText;
-      self.subscriptionDetailsElement.classList.remove('is-invisible');
-
-
-      self.pushButton.textContent = 'disable push messaging';
-      self.pushButton.disabled = false;
-
-      self.pushButton.addEventListener(
-        'click',
-        () => {
-          self.pushButton.disabled = true;
-
-          return unsubscribeAction()
-            // если ошибка будет при выполнении action, то она всплывет верх по стеку
-            .then(() => self
-              .initializeForUnsubscribed(
-                subscribeAction,
-                unsubscribeAction)
-              .catch(someUiError => console.log("ошибка в интерфейсе, но пользователя мы уже отписали")));
-        },
-        { once: true });
-
-      return Promise.resolve();
-    }
-
-    function initializeForUnsubscribed(
-      subscribeAction,
-      unsubscribeAction) {
-      console.log('user is unsubscribed');
-
-      self.subscriptionDetailsElement.classList.add('is-invisible');
-
-      self.pushButton.textContent = 'enable push messaging';
-      self.pushButton.disabled = false;
-
-      self.pushButton.addEventListener(
-        'click',
-        () => {
-          self.pushButton.disabled = true;
-
-          return subscribeAction()
-            // если ошибка будет при выполнении action, то она всплывет верх по стеку
-            .then(descriptionText => self
-              .initializeForSubscribed(
-                descriptionText,
-                subscribeAction,
-                unsubscribeAction)
-              .catch(someUiError => console.log("ошибка в интерфейсе, но пользователя мы уже подписали")));
-        },
-        { once: true });
-
-      return Promise.resolve();
-    }
-
-    self.initializeForBlocked = initializeForBlocked;
-    self.initializeForSubscribed = initializeForSubscribed;
-    self.initializeForUnsubscribed = initializeForUnsubscribed;
+    self.initialize = initialize;
 }
 
 function isWebPushSupported() {
@@ -128,8 +154,7 @@ function isWebPushSupported() {
     return Promise.resolve();
 }
 
-function registerServiceWorker(source)
-{
+function registerServiceWorker(source) {
   return navigator.serviceWorker
     .register(source)
     .then(function(registration) {
@@ -139,6 +164,8 @@ function registerServiceWorker(source)
       };
     });
 }
+
+function isPermissionDenied() { return Notification.permission === 'denied' }
 
 function subscribeUser(pushManager) {
   const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
@@ -150,7 +177,6 @@ function subscribeUser(pushManager) {
       applicationServerKey: applicationServerKey })
     .then(subscribeOnBackend)
     .then(subscription => JSON.stringify(subscription));
-
 }
 
 function unsubscribeUser(pushManager) {
@@ -159,7 +185,7 @@ function unsubscribeUser(pushManager) {
     .then(subscription => subscription
       .unsubscribe()
       .then(isUnsubscribe => {
-        if (isUnsubscribe == true) return unsubscribeOnBackend(subscription);
+        if (isUnsubscribe === true) return unsubscribeOnBackend(subscription);
 
         return Promise.reject("fail to unsubscribe user");
       }));
@@ -196,24 +222,12 @@ isWebPushSupported()
     // .then(() => Promise.reject("service worker registration error"))
     .then(serviceWorkerRegistration => serviceWorkerRegistration.pushManager
       .getSubscription()
-      .then((subscription) => {
-        let isPermissionDenied = Notification.permission === 'denied';
-
-        if (isPermissionDenied) return gui.initializeForBlocked();
-
-        let isSubscribed = subscription !== null;
-
-        if (isSubscribed == true) {
-          return gui
-            .initializeForSubscribed(
-              JSON.stringify(subscription),
-              () => subscribeUser(serviceWorkerRegistration.pushManager),
-              () => unsubscribeUser(serviceWorkerRegistration.pushManager));
-        } else {
-          return gui
-            .initializeForUnsubscribed(
-              () => subscribeUser(serviceWorkerRegistration.pushManager),
-              () => unsubscribeUser(serviceWorkerRegistration.pushManager));
-        }
-    }))
+      .then((subscription) => gui.initialize({
+          isPermissionDenied: isPermissionDenied,
+          isSubscribed: subscription !== null,
+          description: JSON.stringify(subscription),
+          subscribeAction: () => subscribeUser(serviceWorkerRegistration.pushManager),
+          unsubscribeAction: () => unsubscribeUser(serviceWorkerRegistration.pushManager)
+        }))
+    )
     .catch(console.warn.bind(console));
