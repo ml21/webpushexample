@@ -1,16 +1,10 @@
 'use strict';
 
-const applicationServerPublicKey = 'BLHhXmMT2rwr0feGmc4Tg2jPADLcYnYSyWSBtv4XgGbZoDr2ByAasQBU3YJwLAGHlKqvFIx7Ulj0pdWTe6kLoaA';
+const applicationServerPublicKey = 'BNh-ANwl5zLIH5aLnx9WEEgbJdpo_qYukF3uSOlm19lIx3e1yK1Jv7N4EvR2b5qwwIqbjIkslyzvm3gLGe6sK7c';
 
 const pushButton = document.querySelector('.js-push-btn');
 const subscriptionJsonElement = document.querySelector('.js-subscription-json');
 const subscriptionDetailsElement = document.querySelector('.js-subscription-details');
-
-function undefinedReplacer(k, v) {
-  if (v === undefined) return null;
-
-  return v;
-}
 
 function urlB64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -30,10 +24,10 @@ function urlB64ToUint8Array(base64String) {
 // генерация ключей https://web-push-codelab.glitch.me/
 
 // Public Key
-// BLHhXmMT2rwr0feGmc4Tg2jPADLcYnYSyWSBtv4XgGbZoDr2ByAasQBU3YJwLAGHlKqvFIx7Ulj0pdWTe6kLoaA
+// BNh-ANwl5zLIH5aLnx9WEEgbJdpo_qYukF3uSOlm19lIx3e1yK1Jv7N4EvR2b5qwwIqbjIkslyzvm3gLGe6sK7c
 
 // Private Key
-// 7j2JclnAuKdmOJn6G_a34KW8D9MLeSyxzItUPN9Vqm
+// sUOTnhyiARu5aI0Inumq3fb5EKHo4U1_t_0zuHFSwQA
 
 function PushGuiComponent() {
 
