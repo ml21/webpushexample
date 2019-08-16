@@ -1,5 +1,5 @@
 /* пример запуска
-node script 'BPBYBtH7OiNoUDCtW-qTHZ-jSfkCJk8LfBSHN-84Za-XxKUM6h-ruqNZ9JfoTWNuasAehVKiWUVpf4nVhIvvk6Y' 'maF4iqoaQe-QZ9-8AoRQTFruhdbCOqdhErcg55ffSYk' '{"endpoint":"https://fcm.googleapis.com/fcm/send/e4tldJ6M-qA:APA91bGZ-L5tGiKm86HUBbYJ3zXcpfGfQeV75a0hbbmZ9UTjpoBuFEXXc2vNK7rHhVIp-skUJyI5QSFIkcutCzWyF6UQJoqsviLvnQpBBuJlHxi0pvkPKRQ7_upEYvmoXvqnl3GSQvvS","expirationTime":null,"keys":{"p256dh":"BNqc8735g3R0C293A7srjY8qpvlwIn6rJVMS_5Esg5UXEwD9NwTeunIu-WKfbtoR8wy8eCU2He0dzdw3io5W-R0","auth":"G3bh2ffahY3ME1kIsh_xkg"}}'
+node script 'BPBYBtH7OiNoUDCtW-qTHZ-jSfkCJk8LfBSHN-84Za-XxKUM6h-ruqNZ9JfoTWNuasAehVKiWUVpf4nVhIvvk6Y' 'maF4iqoaQe-QZ9-8AoRQTFruhdbCOqdhErcg55ffSYk' '{"endpoint":"https://fcm.googleapis.com/fcm/send/e4tldJ6M-qA:APA91bGZ-L5tGiKm86HUBbYJ3zXcpfGfQeV75a0hbbmZ9UTjpoBuFEXXc2vNK7rHhVIp-skUJyI5QSFIkcutCzWyF6UQJoqsviLvnQpBBuJlHxi0pvkPKRQ7_upEYvmoXvqnl3GSQvvS","expirationTime":null,"keys":{"p256dh":"BNqc8735g3R0C293A7srjY8qpvlwIn6rJVMS_5Esg5UXEwD9NwTeunIu-WKfbtoR8wy8eCU2He0dzdw3io5W-R0","auth":"G3bh2ffahY3ME1kIsh_xkg"}}' texttosend
 */
 
 console.log("Args\n1: public key from https://web-push-codelab.glitch.me/\n2: private key from https://web-push-codelab.glitch.me/\n3: subscription object");
@@ -12,7 +12,9 @@ const vapidKeys = {
 };
 const subscription = JSON.parse(process.argv[4]);
 
-console.log(`\nTry to triger push for subscription ${JSON.stringify(subscription)}\n\nvapidKeys ${JSON.stringify(vapidKeys)}`);
+const dataToSend = process.argv[5];
+
+console.log(`\nTry to triger push\nvapidKeys ${JSON.stringify(vapidKeys)}\nsubscription ${JSON.stringify(subscription)}`);
 
 
 
@@ -35,4 +37,4 @@ webpush.setVapidDetails(
 );
 
 
-triggerPushMessage(subscription, "from script");
+triggerPushMessage(subscription, dataToSend);
